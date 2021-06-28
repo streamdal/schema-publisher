@@ -33,6 +33,11 @@ inputs:
     required: false
     default: 'https://api.batch.sh'
 
+  debug:
+    description: 'Enable debug output'
+    required: false
+    default: 'false'
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -44,3 +49,4 @@ runs:
     - ${{ inputs.root_dir }}
     - ${{ inputs.root_message }}
     - ${{ inputs.api_address }}
+    - ${{ inputs.debug }}

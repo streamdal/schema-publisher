@@ -15,32 +15,35 @@ on:
     branches:
       - master
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.create_tag.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@master
+      - name: Bump version and push tag
+        uses: mathieudutour/github-tag-action@v4.5
+        id: create_tag
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
   batch_push:
     runs-on: ubuntu-latest
-    name: A job to push a new schema revision to Batch
+    name: Update protobuf schema in Batch
+    needs: build
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Push new schemas
-        uses: batchcorp/schema-publisher
+        uses: batchcorp/schema-publisher@9b53662cfca8785253b91f160f4eca5faceb6f37
         id: publish
         with:
-          # Required
-          api_token: ${{ secrets.BATCH_API_TOKEN }}
-
-          # Required
-          schema_id: 'batch-schema-id'
-
-          # Required
+          api_token: '${{ secrets.BATCH_API_TOKEN }}'
+          schema_id: '${{ secrets.BATCH_SCHEMA_ID }}'
+          schema_name: '${{ github.repository }}: ${{ needs.build.outputs.new_tag }}'
           schema_type: protobuf
-
-          # Required
           root_message: events.Message
-
-          # Optional (defaults to the below format)
-          schema_name_format: "Protobuf: ${{ steps.publish.outputs.git_tag }}"
-
-          # Optional (defaults to ./)
-          root_dir: ./events
+          root_dir: events
+          api_address: 'https://api.dev.batch.sh'
 ```
 
