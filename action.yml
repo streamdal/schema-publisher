@@ -1,0 +1,46 @@
+# action.yml
+name: 'Batch Schema Publisher'
+description: 'Publish your schemas to the Batch platform'
+inputs:
+  schema_id:
+    description: 'Batch schema ID'
+    required: true
+
+  schema_type:
+    description: 'Type of schemas we are working with'
+    required: true
+    default: 'protobuf'
+
+  schema_name:
+    description: 'Naming format to use for newly published schemas'
+    required: true
+
+  api_token:
+    description: 'Batch API token'
+    required: true
+
+  root_dir:
+    description: 'Directory that contains schemas and should be treated as root'
+    required: true
+    default: './'
+
+  root_message:
+    description: 'All inbound messages will be of this protobuf type (must include pkg name)'
+    required: true
+
+  api_address:
+    description: 'HTTP address for the Batch API'
+    required: false
+    default: 'https://api.batch.sh'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.schema_id }}
+    - ${{ inputs.schema_type }}
+    - ${{ inputs.schema_name }}
+    - ${{ inputs.api_token }}
+    - ${{ inputs.root_dir }}
+    - ${{ inputs.root_message }}
+    - ${{ inputs.api_address }}
