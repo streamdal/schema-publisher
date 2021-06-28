@@ -45,5 +45,6 @@ jobs:
           root_message: events.Message
           root_dir: events
           api_address: 'https://api.dev.batch.sh'
+          debug: true
 ```
 
