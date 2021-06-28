@@ -44,7 +44,7 @@ jobs:
           schema_type: protobuf
           root_message: events.Message
           root_dir: events
-          api_address: 'https://api.dev.batch.sh'
+          api_address: 'https://api.batch.sh'
           debug: true
 ```
 
