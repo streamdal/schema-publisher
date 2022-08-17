@@ -42,7 +42,6 @@ jobs:
           schema_id: '${{ secrets.BATCH_SCHEMA_ID }}'
           schema_name: '${{ github.repository }}: ${{ needs.build.outputs.new_tag }}'
           schema_type: protobuf
-          root_message: events.Message
           root_dir: events
           api_address: 'https://api.batch.sh'
           debug: true

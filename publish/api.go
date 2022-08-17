@@ -10,9 +10,14 @@ import (
 	"time"
 )
 
+type SchemaArchiveType string
+
 const (
 	GetAccountEndpoint = "/v1/account"
 	GetSchemaEndpoint  = "/v1/schema"
+
+	ProtosArchive        SchemaArchiveType = "protos_archive"
+	DescriptorSetArchive SchemaArchiveType = "descriptor_set"
 )
 
 type APIClient struct {
@@ -35,10 +40,10 @@ type Schema struct {
 }
 
 type SchemaUpdateRequest struct {
-	SchemaID      string `json:"schema_id"`
-	Name          string `json:"name"`
-	RootType      string `json:"root_type"`
-	SchemaArchive string `json:"schema_archive"`
+	SchemaID          string            `json:"schema_id"`
+	Name              string            `json:"name"`
+	SchemaArchive     string            `json:"schema_archive"`
+	SchemaArchiveType SchemaArchiveType `json:"schema_archive_type"`
 }
 
 type Protofile struct {
@@ -132,10 +137,10 @@ func (a *APIClient) UpdateSchema(archive []byte) (*Schema, error) {
 	fullGetSchemaEndpoint := opts.APIAddress + GetSchemaEndpoint
 
 	putRequest := &SchemaUpdateRequest{
-		SchemaID:      opts.SchemaID,
-		Name:          opts.SchemaName,
-		RootType:      opts.RootMessage,
-		SchemaArchive: base64.StdEncoding.EncodeToString(archive),
+		SchemaID:          opts.SchemaID,
+		Name:              opts.SchemaName,
+		SchemaArchive:     base64.StdEncoding.EncodeToString(archive),
+		SchemaArchiveType: SchemaArchiveType(opts.ArtifactType),
 	}
 
 	requestData, err := json.Marshal(putRequest)
