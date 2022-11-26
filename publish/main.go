@@ -37,21 +37,37 @@ type Options struct {
 func init() {
 	opts = &Options{}
 
-	flag.StringVar(&opts.SchemaID, "schema-id", "", "Schema ID that will be updated")
-	flag.StringVar(&opts.SchemaType, "schema-type", SchemaTypeProtobuf,
-		fmt.Sprintf("%s OR %s", SchemaTypeProtobuf, SchemaTypeAvro))
-	flag.StringVar(&opts.SchemaName, "schema-name", "", "Specify schema release name")
-	flag.StringVar(&opts.APIToken, "api-token", "", "Batch API token (dashboard -> account -> security)")
-	flag.StringVar(&opts.InputType, "input-type", InputTypeDescriptorSet,
-		fmt.Sprintf("Type of data input. Valid '%s', '%s'", InputTypeDescriptorSet, InputTypeDir))
-	flag.StringVar(&opts.Input, "input", "", "Input file (descriptor set) or directory")
-	flag.StringVar(&opts.APIAddress, "api-address", DefaultAPIAddress, "HTTP address for Batch API")
-	flag.StringVar(&opts.OutputFile, "output", "", "Optional output file (only used with 'dir' -input-type)")
+	flag.StringVar(&opts.SchemaID, "schema-id",
+		envar("STREAMDAL_SCHEMA_ID", ""),
+		"Schema ID that will be updated")
 
-	if len(os.Args) <= 1 {
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
+	flag.StringVar(&opts.SchemaType, "schema-type",
+		envar("STREAMDAL_SCHEMA_TYPE", SchemaTypeProtobuf),
+		fmt.Sprintf("%s OR %s", SchemaTypeProtobuf, SchemaTypeAvro))
+
+	flag.StringVar(&opts.SchemaName, "schema-name",
+		envar("STREAMDAL_SCHEMA_NAME", ""),
+		"Updated schema name")
+
+	flag.StringVar(&opts.APIToken, "api-token",
+		envar("STREAMDAL_API_TOKEN", ""),
+		"Streamdal API token (dashboard -> account -> security)")
+
+	flag.StringVar(&opts.InputType, "input-type",
+		envar("STREAMDAL_INPUT_TYPE", InputTypeDescriptorSet),
+		fmt.Sprintf("Type of data input (valid '%s', '%s'", InputTypeDescriptorSet, InputTypeDir))
+
+	flag.StringVar(&opts.Input, "input",
+		envar("STREAMDAL_INPUT", ""),
+		"Input file (descriptor set) or directory")
+
+	flag.StringVar(&opts.APIAddress, "api-address",
+		envar("STREAMDAL_API_ADDRESS", DefaultAPIAddress),
+		"HTTP address for Streamdal API")
+
+	flag.StringVar(&opts.OutputFile, "output",
+		envar("STREAMDAL_OUTPUT", ""),
+		"Optional output file (only used with 'dir' -input-type)")
 
 	flag.Parse()
 }
@@ -91,6 +107,14 @@ func main() {
 	}
 
 	fmt.Printf("Schema updated!\nSchema ID: %s\nSchema name: %s\n", opts.SchemaID, opts.SchemaName)
+}
+
+func envar(key string, defaultVal string) string {
+	if val, ok := os.LookupEnv(key); ok {
+		return val
+	}
+
+	return defaultVal
 }
 
 func validateOptions(opts *Options) error {

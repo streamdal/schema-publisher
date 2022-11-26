@@ -24,10 +24,6 @@ inputs:
     required: true
     default: './'
 
-  root_message:
-    description: 'All inbound messages will be of this protobuf type (must include pkg name)'
-    required: true
-
   api_address:
     description: 'HTTP address for the Batch API'
     required: false
@@ -41,12 +37,13 @@ inputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  args:
-    - ${{ inputs.schema_id }}
-    - ${{ inputs.schema_type }}
-    - ${{ inputs.schema_name }}
-    - ${{ inputs.api_token }}
-    - ${{ inputs.root_dir }}
-    - ${{ inputs.root_message }}
-    - ${{ inputs.api_address }}
-    - ${{ inputs.debug }}
+  env:
+    STREAMDAL_SCHEMA_ID: ${{ inputs.schema_id }}
+    STREAMDAL_SCHEMA_TYPE: ${{ inputs.schema_type }}
+    STREAMDAL_SCHEMA_NAME: ${{ inputs.schema_name }}
+    STREAMDAL_API_TOKEN: ${{ inputs.api_token }}
+    STREAMDAL_INPUT: ${{ inputs.input }}
+    STREAMDAL_INPUT_TYPE: ${{ inputs.input_type }}
+    STREAMDAL_API_ADDRESS: ${{ inputs.api_address }}
+    STREAMDAL_OUTPUT: ${{ inputs.output }}
+    DEBUG: ${{ inputs.debug }}

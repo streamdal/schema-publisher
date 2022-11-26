@@ -43,3 +43,16 @@ build/darwin/arm64: clean
 clean: description = Remove existing build artifacts
 clean:
 	$(RM) ./$(SERVICE)-*
+
+.PHONY: docker/build
+docker/build: description = Build docker image
+docker/build:
+	docker build -t batchcorp/schema-publisher:$(VERSION) \
+	-t batchcorp/schema-publisher:latest \
+	-f ./Dockerfile .
+
+PHONY: docker/push
+docker/push: description = Push local docker image
+docker/push:
+	docker push batchcorp/schema-publisher:$(VERSION) && \
+	docker push batchcorp/schema-publisher:latest
