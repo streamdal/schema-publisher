@@ -1,33 +1,43 @@
 # action.yml
-name: 'Batch Schema Publisher'
-description: 'Publish your schemas to the Batch platform'
+name: 'Streamdal Schema Publisher'
+description: 'Publish your schemas to the Streamdal platform'
 inputs:
   schema_id:
-    description: 'Batch schema ID'
+    description: 'Streamdal schema ID'
     required: true
 
   schema_type:
-    description: 'Type of schemas we are working with'
-    required: true
+    description: 'Type of schemas we are working with; ("protobuf" or "avro")'
+    required: false
     default: 'protobuf'
 
   schema_name:
     description: 'Naming format to use for newly published schemas'
-    required: true
+    required: false
 
   api_token:
-    description: 'Batch API token'
+    description: 'Streamdal API token'
     required: true
 
-  root_dir:
-    description: 'Directory that contains schemas and should be treated as root'
+  input:
+    description: 'Input file (descriptor set) or directory'
     required: true
     default: './'
 
+  input_type:
+    description: 'Type of data input ("descriptor_set" or "dir")'
+    required: false
+    default: 'descriptor_set'
+
   api_address:
-    description: 'HTTP address for the Batch API'
+    description: 'HTTP address for the Streamdal API'
     required: false
     default: 'https://api.batch.sh'
+
+  output:
+    description: 'Write generated artifact to file (only valid with "dir" input_type)'
+    required: false
+    default: 'false'
 
   debug:
     description: 'Enable debug output'

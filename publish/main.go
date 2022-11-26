@@ -55,7 +55,7 @@ func init() {
 
 	flag.StringVar(&opts.InputType, "input-type",
 		envar("STREAMDAL_INPUT_TYPE", InputTypeDescriptorSet),
-		fmt.Sprintf("Type of data input (valid '%s', '%s'", InputTypeDescriptorSet, InputTypeDir))
+		fmt.Sprintf("Type of data input (valid '%s', '%s')", InputTypeDescriptorSet, InputTypeDir))
 
 	flag.StringVar(&opts.Input, "input",
 		envar("STREAMDAL_INPUT", ""),
