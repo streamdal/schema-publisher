@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,32 +10,48 @@ import (
 	"os"
 )
 
+const (
+	DefaultAPIAddress      = "https://api.batch.sh"
+	InputTypeDescriptorSet = "descriptor_set"
+	InputTypeProtosArchive = "protos_archive"
+	InputTypeDir           = "dir"
+	SchemaTypeProtobuf     = "protobuf"
+	SchemaTypeAvro         = "avro"
+)
+
 var (
 	opts *Options
 )
 
 type Options struct {
-	SchemaID    string
-	SchemaType  string
-	SchemaName  string
-	APIToken    string
-	RootDir     string
-	RootMessage string
-	APIAddress  string
-	OutputFile  string
+	SchemaID   string
+	SchemaType string
+	SchemaName string
+	APIToken   string
+	APIAddress string
+	Input      string
+	InputType  string
+	OutputFile string
 }
 
 func init() {
 	opts = &Options{}
 
 	flag.StringVar(&opts.SchemaID, "schema-id", "", "Schema ID that will be updated")
-	flag.StringVar(&opts.SchemaType, "schema-type", "", "protobuf, avro")
+	flag.StringVar(&opts.SchemaType, "schema-type", SchemaTypeProtobuf,
+		fmt.Sprintf("%s OR %s", SchemaTypeProtobuf, SchemaTypeAvro))
 	flag.StringVar(&opts.SchemaName, "schema-name", "", "Specify schema release name")
-	flag.StringVar(&opts.APIToken, "api-token", "", "Batch API token")
-	flag.StringVar(&opts.RootDir, "root-dir", "", "Which directory to treat as root for schemas")
-	flag.StringVar(&opts.RootMessage, "root-message", "", "Root message type")
-	flag.StringVar(&opts.APIAddress, "api-address", "", "HTTP address for Batch API")
-	flag.StringVar(&opts.OutputFile, "output", "", "Optional output file")
+	flag.StringVar(&opts.APIToken, "api-token", "", "Batch API token (dashboard -> account -> security)")
+	flag.StringVar(&opts.InputType, "input-type", InputTypeDescriptorSet,
+		fmt.Sprintf("Type of data input. Valid '%s', '%s'", InputTypeDescriptorSet, InputTypeDir))
+	flag.StringVar(&opts.Input, "input", "", "Input file (descriptor set) or directory")
+	flag.StringVar(&opts.APIAddress, "api-address", DefaultAPIAddress, "HTTP address for Batch API")
+	flag.StringVar(&opts.OutputFile, "output", "", "Optional output file (only used with 'dir' -input-type)")
+
+	if len(os.Args) <= 1 {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 
 	flag.Parse()
 }
@@ -51,26 +68,25 @@ func main() {
 
 	sch, err := apiClient.GetSchema()
 	if err != nil {
-		log.Fatalf("unable to fetch schema '%s': %s", opts.SchemaID, err)
+		log.Fatalf("unable to fetch existing schema id '%s': %s", opts.SchemaID, err)
 	}
 
 	if sch.Type != opts.SchemaType {
 		log.Fatalf("mismatching schema types: opts.SchemaType is '%s' while Batch schema id '%s' is '%s'",
 			opts.SchemaType, opts.SchemaID, sch.Type)
 	}
-
-	archive, err := createZip(opts.RootDir)
+	archive, err := generateArchive(opts)
 	if err != nil {
-		log.Fatalf("unable to create zip archive: '%s'", err)
+		log.Fatalf("unable to generate archive: '%s'", err)
 	}
 
-	if opts.OutputFile != "" {
+	if opts.InputType == InputTypeProtosArchive && opts.OutputFile != "" {
 		if err := os.WriteFile(opts.OutputFile, archive, 0600); err != nil {
 			log.Fatalf("unable to write file: %s", err)
 		}
 	}
 
-	if _, err := apiClient.UpdateSchema(archive); err != nil {
+	if _, err := apiClient.UpdateSchema(opts, archive); err != nil {
 		log.Fatalf("unable to new schema upload: %s", err)
 	}
 
@@ -82,38 +98,42 @@ func validateOptions(opts *Options) error {
 		return errors.New("opts cannot be nil")
 	}
 
-	if opts.RootDir == "" {
-		return errors.New("opts.RootDir cannot be empty")
+	if opts.Input == "" {
+		return errors.New("-input must be set")
 	}
 
-	// Check if root dir exists
-	fi, err := os.Stat(opts.RootDir)
-	if err != nil {
-		return fmt.Errorf("unable to stat '%s': %s", opts.RootDir, err)
-	}
+	switch opts.InputType {
+	case InputTypeDir:
+		opts.InputType = InputTypeProtosArchive
 
-	if !fi.IsDir() {
-		return fmt.Errorf("'%s' is not a directory", opts.RootDir)
+		fallthrough
+	case InputTypeProtosArchive:
+		fi, err := os.Stat(opts.Input)
+		if err != nil {
+			return fmt.Errorf("unable to stat '%s': %s", opts.Input, err)
+		}
+
+		if !fi.IsDir() {
+			return fmt.Errorf("'%s' is not a directory", opts.Input)
+		}
+	case InputTypeDescriptorSet:
+		if _, err := os.Stat(opts.Input); err != nil {
+			return fmt.Errorf("unable to stat descriptor set file '%s': %s", opts.Input, err)
+		}
+	default:
+		return fmt.Errorf("unrecognized -input-type '%s'", opts.InputType)
 	}
 
 	if opts.APIToken == "" {
-		return errors.New("opts.APIToken cannot be empty")
-	}
-
-	if opts.SchemaType == "" {
-		return errors.New("SchemaType cannot be empty")
+		return errors.New("-api-token cannot be empty")
 	}
 
 	if opts.SchemaType != "protobuf" {
-		return errors.New("unsupported schema type")
-	}
-
-	if opts.SchemaName == "" {
-		return errors.New("opts.SchemaName cannot be empty")
+		return errors.New("-schema-type not supported")
 	}
 
 	if opts.APIAddress == "" {
-		return errors.New("opts.APIAddress cannot be empty")
+		opts.APIAddress = DefaultAPIAddress
 	}
 
 	if _, err := url.Parse(opts.APIAddress); err != nil {
@@ -121,4 +141,25 @@ func validateOptions(opts *Options) error {
 	}
 
 	return nil
+}
+
+func generateArchive(opts *Options) ([]byte, error) {
+	var (
+		archive []byte
+		err     error
+	)
+
+	if opts.InputType == InputTypeProtosArchive {
+		archive, err = createZip(opts.Input)
+	} else if opts.InputType == InputTypeDescriptorSet {
+		archive, err = os.ReadFile(opts.Input)
+	} else {
+		return nil, errors.New("unsupported input type")
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to generate archive: %s", err)
+	}
+
+	return []byte(base64.StdEncoding.EncodeToString(archive)), nil
 }
