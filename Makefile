@@ -1,7 +1,7 @@
 VERSION ?= $(shell git rev-parse --short HEAD)
 SERVICE = publish
 
-GO = CGO_ENABLED=$(CGO_ENABLED) GOFLAGS=-mod=vendor go
+GO = CGO_ENABLED=$(CGO_ENABLED) go
 CGO_ENABLED ?= 0
 GO_BUILD_FLAGS = -ldflags "-X main.version=${VERSION}"
 
@@ -22,19 +22,37 @@ help:
 
 .PHONY: build
 build: description = Build all
-build: clean build/linux build/darwin
+build: clean build/linux build/darwin/amd64 build/darwin/arm64
 
 .PHONY: build/linux
 build/linux: description = Build linux
 build/linux: clean
 	GOOS=linux GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o ./$(SERVICE)-linux $(SERVICE)/*.go
 
-.PHONY: build/darwin
-build/darwin: description = Build darwin
-build/darwin: clean
-	GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o ./$(SERVICE)-darwin $(SERVICE)/*.go
+.PHONY: build/darwin/amd64
+build/darwin/amd64: description = Build darwin for amd64
+build/darwin/amd64: clean
+	GOOS=darwin GOARCH=amd64 $(GO) build $(GO_BUILD_FLAGS) -o ./$(SERVICE)-darwin-amd64 $(SERVICE)/*.go
+
+.PHONY: build/darwin/arm64
+build/darwin/arm64: description = Build darwin for arm64
+build/darwin/arm64: clean
+	GOOS=darwin GOARCH=arm64 $(GO) build $(GO_BUILD_FLAGS) -o ./$(SERVICE)-darwin-arm64 $(SERVICE)/*.go
 
 .PHONY: clean
 clean: description = Remove existing build artifacts
 clean:
-	$(RM) ./build/$(SERVICE)-*
+	$(RM) ./$(SERVICE)-*
+
+.PHONY: docker/build
+docker/build: description = Build docker image
+docker/build:
+	docker build -t batchcorp/schema-publisher:$(VERSION) \
+	-t batchcorp/schema-publisher:latest \
+	-f ./Dockerfile .
+
+PHONY: docker/push
+docker/push: description = Push local docker image
+docker/push:
+	docker push batchcorp/schema-publisher:$(VERSION) && \
+	docker push batchcorp/schema-publisher:latest

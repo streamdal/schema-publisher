@@ -1,37 +1,43 @@
 # action.yml
-name: 'Batch Schema Publisher'
-description: 'Publish your schemas to the Batch platform'
+name: 'Streamdal Schema Publisher'
+description: 'Publish your schemas to the Streamdal platform'
 inputs:
   schema_id:
-    description: 'Batch schema ID'
+    description: 'Streamdal schema ID'
     required: true
 
   schema_type:
-    description: 'Type of schemas we are working with'
-    required: true
+    description: 'Type of schemas we are working with; ("protobuf" or "avro")'
+    required: false
     default: 'protobuf'
 
   schema_name:
     description: 'Naming format to use for newly published schemas'
-    required: true
+    required: false
 
   api_token:
-    description: 'Batch API token'
+    description: 'Streamdal API token'
     required: true
 
-  root_dir:
-    description: 'Directory that contains schemas and should be treated as root'
+  input:
+    description: 'Input file (descriptor set) or directory'
     required: true
     default: './'
 
-  root_message:
-    description: 'All inbound messages will be of this protobuf type (must include pkg name)'
-    required: true
+  input_type:
+    description: 'Type of data input ("descriptor_set" or "dir")'
+    required: false
+    default: 'descriptor_set'
 
   api_address:
-    description: 'HTTP address for the Batch API'
+    description: 'HTTP address for the Streamdal API'
     required: false
     default: 'https://api.batch.sh'
+
+  output:
+    description: 'Write generated artifact to file (only valid with "dir" input_type)'
+    required: false
+    default: 'false'
 
   debug:
     description: 'Enable debug output'
@@ -41,12 +47,13 @@ inputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  args:
-    - ${{ inputs.schema_id }}
-    - ${{ inputs.schema_type }}
-    - ${{ inputs.schema_name }}
-    - ${{ inputs.api_token }}
-    - ${{ inputs.root_dir }}
-    - ${{ inputs.root_message }}
-    - ${{ inputs.api_address }}
-    - ${{ inputs.debug }}
+  env:
+    STREAMDAL_SCHEMA_ID: ${{ inputs.schema_id }}
+    STREAMDAL_SCHEMA_TYPE: ${{ inputs.schema_type }}
+    STREAMDAL_SCHEMA_NAME: ${{ inputs.schema_name }}
+    STREAMDAL_API_TOKEN: ${{ inputs.api_token }}
+    STREAMDAL_INPUT: ${{ inputs.input }}
+    STREAMDAL_INPUT_TYPE: ${{ inputs.input_type }}
+    STREAMDAL_API_ADDRESS: ${{ inputs.api_address }}
+    STREAMDAL_OUTPUT: ${{ inputs.output }}
+    DEBUG: ${{ inputs.debug }}

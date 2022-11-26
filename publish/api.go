@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -35,10 +35,10 @@ type Schema struct {
 }
 
 type SchemaUpdateRequest struct {
-	SchemaID      string `json:"schema_id"`
-	Name          string `json:"name"`
-	RootType      string `json:"root_type"`
-	SchemaArchive string `json:"schema_archive"`
+	SchemaID          string `json:"schema_id"`
+	Name              string `json:"name"`
+	SchemaArchive     string `json:"schema_archive"`
+	SchemaArchiveType string `json:"schema_archive_type"`
 }
 
 type Protofile struct {
@@ -128,14 +128,18 @@ func (a *APIClient) GetSchema() (*Schema, error) {
 	return sch, nil
 }
 
-func (a *APIClient) UpdateSchema(archive []byte) (*Schema, error) {
+func (a *APIClient) UpdateSchema(opts *Options, archive []byte) (*Schema, error) {
+	if opts == nil {
+		return nil, errors.New("opts cannot be nil")
+	}
+
 	fullGetSchemaEndpoint := opts.APIAddress + GetSchemaEndpoint
 
 	putRequest := &SchemaUpdateRequest{
-		SchemaID:      opts.SchemaID,
-		Name:          opts.SchemaName,
-		RootType:      opts.RootMessage,
-		SchemaArchive: base64.StdEncoding.EncodeToString(archive),
+		SchemaID:          opts.SchemaID,
+		Name:              opts.SchemaName,
+		SchemaArchiveType: opts.InputType,
+		SchemaArchive:     string(archive),
 	}
 
 	requestData, err := json.Marshal(putRequest)
