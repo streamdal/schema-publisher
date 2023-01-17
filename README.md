@@ -71,7 +71,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Push new schemas
-        uses: batchcorp/schema-publisher@9b53662cfca8785253b91f160f4eca5faceb6f37
+        uses: batchcorp/schema-publisher@latest
         id: publish
         with:
           api_token: '${{ secrets.STREAMDAL_API_TOKEN }}'
