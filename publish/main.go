@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	DefaultAPIAddress      = "https://api.batch.sh"
+	DefaultAPIAddress      = "https://api.streamdal.com"
 	InputTypeDescriptorSet = "descriptor_set"
 	InputTypeProtosArchive = "protos_archive"
 	InputTypeDir           = "dir"
